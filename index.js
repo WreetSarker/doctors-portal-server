@@ -25,6 +25,15 @@ client.connect(err => {
             })
     })
 
+    app.post('/getAppointmentsByDate', (req, res) => {
+        const date = req.body;
+        console.log(date);
+        appointmentsCollection.find({ date: date.date })
+            .toArray((err, documents) => {
+                res.send(documents)
+            })
+    })
+
 });
 
 
