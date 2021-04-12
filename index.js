@@ -3,9 +3,13 @@ const app = express();
 
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const fileUpload = require('express-fileupload');
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static('doctors'));
+app.use(fileUpload());
+
 require('dotenv').config();
 
 
@@ -39,6 +43,20 @@ client.connect(err => {
             .toArray((err, documents) => {
                 res.send(documents)
             })
+    })
+
+    app.post('/addDoctor', (req, res) => {
+        const file = req.files.file;
+        const name = req.body.name;
+        const email = req.body.email;
+        file.mv(`${__dirname}/doctors/${file.name}`, err => {
+            if (err) {
+                console.log(err);
+                return res.status(500).send({ msg: 'Failed to upload the image' })
+            } else {
+                return res.send({ name: file.name, path: `/${file.name}` })
+            }
+        })
     })
 
 });
