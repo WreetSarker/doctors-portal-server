@@ -63,6 +63,13 @@ client.connect(err => {
             })
     })
 
+    app.get('/doctors', (req, res) => {
+        doctorsCollection.find({})
+            .toArray((err, documents) => {
+                res.send(documents)
+            })
+    })
+
 
     app.post('/addDoctor', (req, res) => {
         const file = req.files.file;
