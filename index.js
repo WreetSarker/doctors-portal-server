@@ -20,6 +20,7 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 client.connect(err => {
     const appointmentsCollection = client.db("doctorsPortal").collection("dpCollection");
+    const doctorsCollection = client.db("doctorsPortal").collection("doctors");
 
     app.post('/addAppointment', (req, res) => {
         const appointment = req.body;
@@ -31,11 +32,22 @@ client.connect(err => {
 
     app.post('/getAppointmentsByDate', (req, res) => {
         const date = req.body;
-        console.log(date);
-        appointmentsCollection.find({ date: date.date })
-            .toArray((err, documents) => {
-                res.send(documents)
+        const email = req.body.email;
+        doctorsCollection.find({ email: email })
+            .toArray((err, doctorDocuments) => {
+                const filter = { date: date.date }
+                if (doctorDocuments.length === 0) {
+                    // This condition checks user is not a doctor
+                    // so user can see only his email data
+                    filter.email = email;
+                }
+                appointmentsCollection.find(filter)
+                    .toArray((err, documents) => {
+                        res.send(documents)
+                    })
             })
+
+
     })
 
     app.get('/appointments', (req, res) => {
@@ -45,19 +57,39 @@ client.connect(err => {
             })
     })
 
+
     app.post('/addDoctor', (req, res) => {
         const file = req.files.file;
         const name = req.body.name;
         const email = req.body.email;
-        file.mv(`${__dirname}/doctors/${file.name}`, err => {
-            if (err) {
-                console.log(err);
-                return res.status(500).send({ msg: 'Failed to upload the image' })
-            } else {
-                return res.send({ name: file.name, path: `/${file.name}` })
-            }
-        })
+        const newImg = file.data;
+        const encImg = newImg.toString('base64');
+
+        var image = {
+            contentType: file.mimetype,
+            size: file.size,
+            img: Buffer.from(encImg, 'base64')
+        };
+
+        doctorsCollection.insertOne({ name, email, image })
+            .then(result => {
+                res.send(result.insertedCount > 0);
+            })
     })
+
+    // app.post('/addDoctor', (req, res) => {
+    //     const file = req.files.file;
+    //     const name = req.body.name;
+    //     const email = req.body.email;
+    //     file.mv(`${__dirname}/doctors/${file.name}`, err => {
+    //         if (err) {
+    //             console.log(err);
+    //             return res.status(500).send({ msg: 'Failed to upload the image' })
+    //         } else {
+    //             return res.send({ name: file.name, path: `/${file.name}` })
+    //         }
+    //     })
+    // })
 
 });
 
